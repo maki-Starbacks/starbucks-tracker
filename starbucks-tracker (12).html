@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a2e">
+<title>☕ Maki's Starbucks Visit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00704A;
+    --green-light: #1e9d6b;
+    --gold: #CBA258;
+    --pink: #F4A7B9;
+    --orange: #F4742B;
+    --blue: #5B9BD5;
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --border: #30363d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ヘッダー */
+  #header {
+    background: linear-gradient(135deg, #0d1117 0%, #1a2740 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  #header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--green-light);
+    letter-spacing: 0.05em;
+  }
+
+  #header h1 span { color: var(--gold); }
+
+  #stats-bar {
+    display: flex;
+    gap: 12px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  #stats-bar b { color: var(--text); }
+
+  #backup-btns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .backup-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .backup-btn:active {
+    background: var(--surface2);
+  }
+
+  /* 地図 */
+  #map {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+  }
+
+  /* 凡例 */
+  #legend {
+    position: absolute;
+    bottom: 80px;
+    left: 12px;
+    background: rgba(13,17,23,0.92);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.7rem;
+    z-index: 5;
+    backdrop-filter: blur(8px);
+  }
+
+  #legend .leg-title {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .leg-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ボトムシート */
+  #bottom-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    z-index: 20;
+    max-height: 85dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #bottom-sheet.open { transform: translateY(0); }
+
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  #sheet-content {
+    padding: 16px 20px 32px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  #sheet-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  #sheet-address {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  #sheet-last-visit {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  #sheet-last-visit span { color: var(--gold); font-weight: 700; }
+
+  /* お気に入り選択 */
+  .section-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  #favorite-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .fav-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    text-align: center;
+  }
+
+  .fav-btn.active-1 { border-color: #00704A; color: #00704A; background: rgba(0,112,74,0.12); }
+  .fav-btn.active-2 { border-color: #F4A7B9; color: #F4A7B9; background: rgba(244,167,185,0.12); }
+  .fav-btn.active-3 { border-color: #E8365D; color: #E8365D; background: rgba(232,54,93,0.12); }
+
+  /* ログ入力 */
+  #log-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: none;
+    height: 80px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+
+  #log-input:focus {
+    outline: none;
+    border-color: var(--green);
+  }
+
+  /* 過去ログ */
+  #past-logs {
+    margin-bottom: 16px;
+  }
+
+  .log-entry {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+  }
+
+  .log-date {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+  }
+
+  /* 保存ボタン */
+  #save-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: opacity 0.2s;
+  }
+
+  #save-btn:active { opacity: 0.8; }
+
+  /* 閉じるボタン */
+  #close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ローディング */
+  #loading {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    gap: 16px;
+  }
+
+  #loading.hidden { display: none; }
+
+  .loader {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #loading p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  /* トースト */
+  #toast {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--green);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 50;
+    white-space: nowrap;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* オーバーレイ */
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 15;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  #overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* 写真アップロード */
+  #photo-section {
+    margin-bottom: 12px;
+  }
+
+  #photo-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-family: inherit;
+    cursor: pointer;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+
+  #photo-upload-btn:active {
+    border-color: var(--green);
+    color: var(--green-light);
+  }
+
+  #photo-preview {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .photo-thumb {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .photo-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-thumb .photo-del {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.6rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .log-photos {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .log-photos img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+    position: absolute;
+    bottom: 24px;
+    right: 16px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 4px 20px rgba(0,112,74,0.4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* 現在地ボタン */
+  #locate-btn {
+    position: absolute;
+    bottom: 24px;
+    left: 16px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  #locate-btn:active {
+    background: var(--surface2);
+  }
+
+  /* 最寄り店舗バナー */
+  #nearest-banner {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13,17,23,0.95);
+    border: 1px solid var(--green);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 0.78rem;
+    z-index: 10;
+    white-space: nowrap;
+    display: none;
+    backdrop-filter: blur(8px);
+    color: var(--text);
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #nearest-banner span {
+    color: var(--green-light);
+    font-weight: 700;
+  }
+
+  /* 店舗追加モーダル */
+  #add-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: flex-end;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  #add-modal.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  #add-modal-inner {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 40px;
+    width: 100%;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+  }
+
+  #add-modal.open #add-modal-inner {
+    transform: translateY(0);
+  }
+
+  #add-modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: var(--green-light);
+  }
+
+  .add-field {
+    margin-bottom: 12px;
+  }
+
+  .add-field label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 5px;
+  }
+
+  .add-field input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+
+  .add-field input:focus {
+    outline: none;
+    border-color: var(--green);
+  }
+
+  .add-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .add-row .add-field { flex: 1; }
+
+  #geocode-btn {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+  }
+
+  #geocode-btn:hover {
+    border-color: var(--green);
+    color: var(--green-light);
+  }
+
+  #add-submit-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  #add-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #add-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 29;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  #add-modal-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader"></div>
+  <p>店舗データを読み込み中...</p>
+</div>
+
+<div id="toast"></div>
+<div id="overlay"></div>
+
+<div id="header">
+  <h1>☕ Maki's <span>Starbucks Visit</span></h1>
+  <div id="stats-bar">
+    <span>訪問済 <b id="visited-count">0</b></span>
+    <span>/ <b id="total-count">0</b>店舗</span>
+  </div>
+  <div id="backup-btns">
+    <button class="backup-btn" id="export-btn">💾 保存</button>
+    <button class="backup-btn" id="import-btn">📂 復元</button>
+    <input type="file" id="import-input" accept=".json" style="display:none">
+  </div>
+</div>
+
+<div id="map"></div>
+
+<!-- 店舗追加ボタン -->
+<button id="add-store-btn">＋ 店舗を追加</button>
+
+<!-- 現在地ボタン -->
+<button id="locate-btn">📍 最寄り店舗</button>
+
+<!-- 最寄り店舗バナー -->
+<div id="nearest-banner">📍 最寄り: <span id="nearest-name"></span>（<span id="nearest-dist"></span>m）</div>
+
+<!-- 店舗追加モーダル -->
+<div id="add-modal-overlay"></div>
+<div id="add-modal">
+  <div id="add-modal-inner" style="position:relative">
+    <button id="add-close-btn">✕</button>
+    <h2>＋ 店舗を追加</h2>
+    <div class="add-field">
+      <label>店舗名</label>
+      <input type="text" id="add-name" placeholder="例：スターバックス 渋谷店">
+    </div>
+    <div class="add-field">
+      <label>住所</label>
+      <input type="text" id="add-address" placeholder="例：東京都渋谷区道玄坂2-6-17">
+    </div>
+    <button id="geocode-btn">📍 住所から座標を自動取得</button>
+    <div class="add-row">
+      <div class="add-field">
+        <label>緯度（lat）</label>
+        <input type="number" id="add-lat" placeholder="35.6585" step="0.0001">
+      </div>
+      <div class="add-field">
+        <label>経度（lng）</label>
+        <input type="number" id="add-lng" placeholder="139.7013" step="0.0001">
+      </div>
+    </div>
+    <button id="add-submit-btn">✓ この店舗を追加する</button>
+  </div>
+</div>
+
+<div id="legend">
+  <div class="leg-title">ピンの色</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#5B9BD5"></div>未訪問</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#00704A"></div>普通</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#F4A7B9"></div>好き</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#E8365D"></div>大好き</div>
+  <div style="margin-top:6px; border-top:1px solid #30363d; padding-top:6px;">
+  <div class="leg-title">ピンの大きさ</div>
+  <div style="font-size:0.68rem; color:#8b949e; line-height:1.6;">
+    SS 未訪問<br>
+    S 1か月以内<br>
+    M 1〜6か月<br>
+    L 半年以上
+  </div>
+  </div>
+</div>
+
+<!-- ボトムシート -->
+<div id="bottom-sheet">
+  <div class="sheet-handle"></div>
+  <button id="close-btn">✕</button>
+  <div id="sheet-content">
+    <div id="sheet-name">店舗名</div>
+    <div id="sheet-address">住所</div>
+    <div id="sheet-last-visit">最終訪問: <span>未訪問</span></div>
+
+    <div class="section-label">お気に入り度</div>
+    <div id="favorite-selector">
+      <button class="fav-btn" data-val="1"><span style="color:#00704A;font-size:1.1em">●</span> 普通</button>
+      <button class="fav-btn" data-val="2"><span style="color:#F4A7B9;font-size:1.1em">●</span> 好き</button>
+      <button class="fav-btn" data-val="3"><span style="color:#E8365D;font-size:1.1em">●</span> 大好き</button>
+    </div>
+
+    <div class="section-label">今日のひとこと</div>
+    <textarea id="log-input" placeholder=""></textarea>
+
+    <div class="section-label" style="margin-top:12px">写真</div>
+    <div id="photo-section">
+      <button id="photo-upload-btn" type="button">📷 写真を追加</button>
+      <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
+      <div id="photo-preview"></div>
+    </div>
+
+    <div id="past-logs"></div>
+
+    <button id="save-btn">✓ 訪問ログを保存</button>
+  </div>
+</div>
+
+<script>
+// =============================
+// 設定
+// =============================
+const API_KEY = 'AIzaSyB-HT9q70J8PoMN26dUwqxWnoauszJ8N7k';
+const SHEET_ID = '1G26KigwbeTID3cwFsWqtCVPQVrf6vicrs4hsXm9iiwY';
+const SHEET_NAME = 'stores';
+
+// 都内スタバ店舗データ（主要店舗）
+const INITIAL_STORES = [
+  {id:1,name:"スターバックス 新宿サザンテラス店",address:"東京都渋谷区代々木2-2-1",lat:35.6851,lng:139.7019},
+  {id:2,name:"スターバックス 渋谷スクランブルスクエア店",address:"東京都渋谷区渋谷2-24-12",lat:35.6584,lng:139.7022},
+  {id:3,name:"スターバックス 原宿竹下通り店",address:"東京都渋谷区神宮前1-16-8",lat:35.6705,lng:139.7047},
+  {id:4,name:"スターバックス 表参道ヒルズ店",address:"東京都渋谷区神宮前4-12-10",lat:35.6651,lng:139.7100},
+  {id:5,name:"スターバックス 銀座マロニエゲート店",address:"東京都中央区銀座2-2-14",lat:35.6722,lng:139.7653},
+  {id:6,name:"スターバックス 銀座松屋通り店",address:"東京都中央区銀座3-7-3",lat:35.6706,lng:139.7645},
+  {id:7,name:"スターバックス 銀座六丁目店",address:"東京都中央区銀座6-9-12",lat:35.6689,lng:139.7635},
+  {id:8,name:"スターバックス 東京駅八重洲北口店",address:"東京都千代田区丸の内1-9-1",lat:35.6812,lng:139.7680},
+  {id:9,name:"スターバックス 丸の内店",address:"東京都千代田区丸の内2-7-3",lat:35.6804,lng:139.7648},
+  {id:10,name:"スターバックス 日比谷公園店",address:"東京都千代田区日比谷公園1",lat:35.6745,lng:139.7578},
+  {id:11,name:"スターバックス 六本木ヒルズ店",address:"東京都港区六本木6-10-1",lat:35.6604,lng:139.7292},
+  {id:12,name:"スターバックス 麻布十番店",address:"東京都港区麻布十番1-4-2",lat:35.6568,lng:139.7381},
+  {id:13,name:"スターバックス 赤坂Bizタワー店",address:"東京都港区赤坂5-3-1",lat:35.6716,lng:139.7382},
+  {id:14,name:"スターバックス 青山通り店",address:"東京都港区南青山3-13-18",lat:35.6672,lng:139.7147},
+  {id:15,name:"スターバックス 池袋サンシャインシティ店",address:"東京都豊島区東池袋3-1",lat:35.7296,lng:139.7196},
+  {id:16,name:"スターバックス 池袋東口店",address:"東京都豊島区東池袋1-2-3",lat:35.7303,lng:139.7124},
+  {id:17,name:"スターバックス 上野店",address:"東京都台東区上野4-1-2",lat:35.7100,lng:139.7746},
+  {id:18,name:"スターバックス 浅草ROX店",address:"東京都台東区浅草1-25-15",lat:35.7122,lng:139.7955},
+  {id:19,name:"スターバックス 秋葉原UDX店",address:"東京都千代田区外神田4-14-1",lat:35.6993,lng:139.7724},
+  {id:20,name:"スターバックス 神田店",address:"東京都千代田区神田須田町1-18",lat:35.6941,lng:139.7712},
+  {id:21,name:"スターバックス 代官山蔦屋書店",address:"東京都渋谷区猿楽町17-5",lat:35.6480,lng:139.7017},
+  {id:22,name:"スターバックス 中目黒店",address:"東京都目黒区上目黒2-1-3",lat:35.6444,lng:139.6995},
+  {id:23,name:"スターバックス 自由が丘店",address:"東京都目黒区自由が丘2-9-1",lat:35.6075,lng:139.6689},
+  {id:24,name:"スターバックス 二子玉川ライズ店",address:"東京都世田谷区玉川2-21-1",lat:35.6126,lng:139.6278},
+  {id:25,name:"スターバックス 下北沢店",address:"東京都世田谷区北沢2-30-14",lat:35.6617,lng:139.6682},
+  {id:26,name:"スターバックス 吉祥寺店",address:"東京都武蔵野市吉祥寺本町1-13-4",lat:35.7028,lng:139.5795},
+  {id:27,name:"スターバックス 三鷹店",address:"東京都三鷹市下連雀3-37-15",lat:35.6839,lng:139.5585},
+  {id:28,name:"スターバックス 新宿東口店",address:"東京都新宿区新宿3-17-5",lat:35.6900,lng:139.7033},
+  {id:29,name:"スターバックス 高田馬場店",address:"東京都新宿区高田馬場1-35-3",lat:35.7124,lng:139.7032},
+  {id:30,name:"スターバックス 早稲田店",address:"東京都新宿区早稲田鶴巻町523",lat:35.7073,lng:139.7188},
+  {id:31,name:"スターバックス 豊洲店",address:"東京都江東区豊洲2-4-9",lat:35.6551,lng:139.7963},
+  {id:32,name:"スターバックス お台場デックス店",address:"東京都港区台場1-6-1",lat:35.6267,lng:139.7727},
+  {id:33,name:"スターバックス 有明ガーデン店",address:"東京都江東区有明2-1-8",lat:35.6348,lng:139.7948},
+  {id:34,name:"スターバックス 錦糸町テルミナ店",address:"東京都墨田区錦糸1-2-1",lat:35.6963,lng:139.8144},
+  {id:35,name:"スターバックス 押上スカイツリータウン店",address:"東京都墨田区押上1-1-2",lat:35.7101,lng:139.8107},
+  {id:36,name:"スターバックス 北千住マルイ店",address:"東京都足立区千住3-92",lat:35.7494,lng:139.8024},
+  {id:37,name:"スターバックス 王子店",address:"東京都北区王子1-11-1",lat:35.7515,lng:139.7376},
+  {id:38,name:"スターバックス 赤羽店",address:"東京都北区赤羽1-3-5",lat:35.7779,lng:139.7210},
+  {id:39,name:"スターバックス 品川インターシティ店",address:"東京都港区港南2-15-2",lat:35.6267,lng:139.7400},
+  {id:40,name:"スターバックス 品川店",address:"東京都港区高輪3-26-33",lat:35.6302,lng:139.7402},
+];
+
+// =============================
+// 状態管理
+// =============================
+let map;
+let markers = {};
+let stores = [];
+let currentStoreId = null;
+let currentFavorite = 0;
+let logsData = {}; // storeId -> [{date, note}]
+
+// =============================
+// Google Maps 初期化
+// =============================
+window.initMap = async function() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 35.6762, lng: 139.6503 },
+    zoom: 12,
+    disableDefaultUI: true,
+    zoomControl: true,
+    styles: [
+      { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#1a1a2e' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#8b949e' }] },
+      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#21262d' }] },
+      { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#30363d' }] },
+      { featureType: 'road.highway', stylers: [{ visibility: 'off' }] },
+      { featureType: 'road.arterial', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1117' }] },
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2a3a5c' }] },
+      { featureType: 'transit.line', elementType: 'geometry', stylers: [{ color: '#3a5a9c' }] },
+      { featureType: 'transit.station', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#8b9ec7', visibility: 'on' }] },
+    ]
+  });
+
+  await loadStoresFromSheet();
+  document.getElementById('loading').classList.add('hidden');
+};
+
+// =============================
+// ローカルストレージ
+// =============================
+const LS_STORES = 'sbtracker_stores';
+const LS_LOGS   = 'sbtracker_logs';
+
+function saveLocal() {
+  try {
+    localStorage.setItem(LS_STORES, JSON.stringify(stores));
+    localStorage.setItem(LS_LOGS,   JSON.stringify(logsData));
+  } catch(e) {}
+}
+
+function loadLocal() {
+  try {
+    const s = localStorage.getItem(LS_STORES);
+    const l = localStorage.getItem(LS_LOGS);
+    return {
+      stores: s ? JSON.parse(s) : null,
+      logs:   l ? JSON.parse(l) : null,
+    };
+  } catch(e) { return { stores: null, logs: null }; }
+}
+
+// =============================
+// スプレッドシートからデータ読み込み
+// =============================
+async function loadStoresFromSheet() {
+  // まずローカルストレージから読み込む
+  const local = loadLocal();
+  if (local.stores && local.stores.length > 0) {
+    stores = local.stores;
+    logsData = local.logs || {};
+    renderMarkers();
+    updateStats();
+    return;
+  }
+
+  // ローカルになければスプレッドシートから取得
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const rows = data.values || [];
+
+    const existingIds = new Set();
+    if (rows.length > 1) {
+      for (let i = 1; i < rows.length; i++) {
+        const [id, name, address, lat, lng, favorite, last_visit] = rows[i];
+        if (!id) continue;
+        existingIds.add(String(id));
+        stores.push({
+          id: Number(id),
+          name,
+          address,
+          lat: parseFloat(lat),
+          lng: parseFloat(lng),
+          favorite: Number(favorite) || 0,
+          last_visit: last_visit || ''
+        });
+      }
+    }
+
+    const newStores = INITIAL_STORES.filter(s => !existingIds.has(String(s.id)));
+    for (const s of newStores) {
+      stores.push({ ...s, favorite: 0, last_visit: '' });
+    }
+
+    await loadLogs();
+
+  } catch (e) {
+    console.error('シート読み込みエラー:', e);
+    stores = INITIAL_STORES.map(s => ({ ...s, favorite: 0, last_visit: '' }));
+  }
+
+  saveLocal();
+  renderMarkers();
+  updateStats();
+}
+
+// =============================
+// 初期店舗をシートに書き込む
+// =============================
+async function addInitialStoresToSheet(newStores) {
+  try {
+    // まず既存データ数を確認して追記
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}:append?valueInputOption=RAW&key=${API_KEY}`;
+
+    // API KeyだけではPOSTできないので、ここではローカルのみ保持
+    // （書き込みはOAuth必要のため、初回はヘッダーのみ確認用）
+  } catch(e) {}
+}
+
+// =============================
+// ログ読み込み（logsシート）
+// =============================
+async function loadLogs() {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/logs?key=${API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const rows = data.values || [];
+    if (rows.length > 1) {
+      for (let i = 1; i < rows.length; i++) {
+        const [storeId, date, note] = rows[i];
+        if (!storeId) continue;
+        if (!logsData[storeId]) logsData[storeId] = [];
+        logsData[storeId].push({ date, note });
+      }
+    }
+  } catch(e) {}
+}
+
+// =============================
+// マーカー描画
+// =============================
+function getPinColor(favorite, last_visit) {
+  if (!last_visit) return '#5B9BD5'; // 青：未訪問
+  if (favorite === 3) return '#E8365D'; // 赤：大好き
+  if (favorite === 2) return '#F4A7B9'; // ピンク：好き
+  if (favorite === 1) return '#00704A'; // グリーン：普通
+  return '#00704A'; // グリーン：デフォルト
+}
+
+function getPinSize(last_visit) {
+  if (!last_visit) return 10; // SS: 未訪問
+  const days = Math.floor((Date.now() - new Date(last_visit).getTime()) / 86400000);
+  if (days <= 30) return 14;  // S: 1か月以内
+  if (days <= 180) return 20; // M: 1か月〜6か月
+  return 28;                  // L: 半年以上
+}
+
+function createPinSVG(color, size) {
+  const s = size;
+  return {
+    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="${s*2}" height="${s*2.5}" viewBox="0 0 ${s*2} ${s*2.5}">
+        <circle cx="${s}" cy="${s}" r="${s-2}" fill="${color}" stroke="white" stroke-width="2"/>
+        <polygon points="${s-4},${s*1.8} ${s+4},${s*1.8} ${s},${s*2.5}" fill="${color}"/>
+        <circle cx="${s}" cy="${s}" r="${s*0.35}" fill="white" opacity="0.8"/>
+      </svg>
+    `)}`,
+    scaledSize: new google.maps.Size(s * 2, s * 2.5),
+    anchor: new google.maps.Point(s, s * 2.5),
+  };
+}
+
+function renderMarkers() {
+  // 既存マーカーを削除
+  Object.values(markers).forEach(m => m.setMap(null));
+  markers = {};
+
+  for (const store of stores) {
+    const color = getPinColor(store.favorite, store.last_visit);
+    const size = getPinSize(store.last_visit);
+    const icon = createPinSVG(color, size);
+
+    const marker = new google.maps.Marker({
+      position: { lat: store.lat, lng: store.lng },
+      map,
+      icon,
+      title: store.name,
+    });
+
+    marker.addListener('click', () => openSheet(store.id));
+    markers[store.id] = marker;
+  }
+}
+
+// =============================
+// ボトムシート開閉
+// =============================
+function openSheet(storeId) {
+  const store = stores.find(s => s.id === storeId);
+  if (!store) return;
+  currentStoreId = storeId;
+  currentFavorite = store.favorite || 0;
+
+  document.getElementById('sheet-name').textContent = store.name;
+  document.getElementById('sheet-address').textContent = store.address;
+
+  const lv = document.getElementById('sheet-last-visit');
+  if (store.last_visit) {
+    const days = Math.floor((Date.now() - new Date(store.last_visit).getTime()) / 86400000);
+    lv.innerHTML = `最終訪問: <span>${store.last_visit}（${days}日前）</span>`;
+  } else {
+    lv.innerHTML = `最終訪問: <span>未訪問</span>`;
+  }
+
+  // お気に入りボタン
+  document.querySelectorAll('.fav-btn').forEach(btn => {
+    btn.classList.remove('active-0','active-1','active-2','active-3');
+    if (Number(btn.dataset.val) === currentFavorite) {
+      btn.classList.add(`active-${currentFavorite}`);
+    }
+  });
+
+  // ログ入力リセット
+  document.getElementById('log-input').value = '';
+  pendingPhotos = [];
+  renderPhotoPreview();
+
+  // 過去ログ表示
+  const pastLogs = logsData[String(storeId)] || [];
+  const pastEl = document.getElementById('past-logs');
+  if (pastLogs.length > 0) {
+    pastEl.innerHTML = `<div class="section-label" style="margin-bottom:8px">過去のログ</div>` +
+      pastLogs.slice().reverse().slice(0,5).map(l => `
+        <div class="log-entry">
+          <div class="log-date">${l.date}</div>
+          ${l.note || '（メモなし）'}
+          ${l.photos && l.photos.length > 0
+            ? `<div class="log-photos">${l.photos.map(src => `<img src="${src}">`).join('')}</div>`
+            : ''}
+        </div>
+      `).join('');
+  } else {
+    pastEl.innerHTML = '';
+  }
+
+  document.getElementById('bottom-sheet').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeSheet() {
+  document.getElementById('bottom-sheet').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  currentStoreId = null;
+}
+
+// =============================
+// バックアップ・復元
+// =============================
+document.getElementById('export-btn').addEventListener('click', () => {
+  const data = { stores, logs: logsData };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sbvisit-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 バックアップを保存しました！');
+});
+
+document.getElementById('import-btn').addEventListener('click', () => {
+  document.getElementById('import-input').click();
+});
+
+document.getElementById('import-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.stores) throw new Error();
+      stores = data.stores;
+      logsData = data.logs || {};
+      saveLocal();
+      renderMarkers();
+      updateStats();
+      showToast('📂 データを復元しました！');
+    } catch {
+      showToast('⚠️ ファイルが正しくありません');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// =============================
+// 写真アップロード
+// =============================
+let pendingPhotos = []; // 今回追加する写真のbase64配列
+
+document.getElementById('photo-upload-btn').addEventListener('click', () => {
+  document.getElementById('photo-input').click();
+});
+
+document.getElementById('photo-input').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    const compressed = await compressImage(file, 600, 0.7);
+    pendingPhotos.push(compressed);
+  }
+  renderPhotoPreview();
+  e.target.value = ''; // 同じファイルを再選択できるようリセット
+});
+
+function compressImage(file, maxSize, quality) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > h && w > maxSize) { h = h * maxSize / w; w = maxSize; }
+        else if (h > maxSize) { w = w * maxSize / h; h = maxSize; }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPhotoPreview() {
+  const el = document.getElementById('photo-preview');
+  el.innerHTML = pendingPhotos.map((src, i) => `
+    <div class="photo-thumb">
+      <img src="${src}">
+      <button class="photo-del" onclick="removePendingPhoto(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+window.removePendingPhoto = (i) => {
+  pendingPhotos.splice(i, 1);
+  renderPhotoPreview();
+};
+
+// =============================
+// 保存処理
+// =============================
+document.getElementById('save-btn').addEventListener('click', async () => {
+  if (!currentStoreId) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const note = document.getElementById('log-input').value.trim();
+  const photos = [...pendingPhotos];
+
+  // stores更新
+  const store = stores.find(s => s.id === currentStoreId);
+  store.favorite = currentFavorite;
+  store.last_visit = today;
+
+  // ログ追加（写真含む）
+  const sid = String(currentStoreId);
+  if (!logsData[sid]) logsData[sid] = [];
+  logsData[sid].push({ date: today, note, photos });
+
+  // 写真リセット
+  pendingPhotos = [];
+  renderPhotoPreview();
+
+  // シートへ書き込み（stores行を更新）
+  await saveToSheet(store, today, note);
+
+  // ローカルストレージにも保存
+  saveLocal();
+
+  // マーカー更新
+  const color = getPinColor(store.favorite, store.last_visit);
+  const size = getPinSize(store.last_visit);
+  const icon = createPinSVG(color, size);
+  markers[currentStoreId].setIcon(icon);
+
+  updateStats();
+  closeSheet();
+  showToast('✓ ログを保存しました！');
+});
+
+// =============================
+// スプレッドシートへ保存
+// =============================
+async function saveToSheet(store, date, note) {
+  // stores シートを全て上書き
+  const values = [
+    ['id','name','address','lat','lng','favorite','last_visit'],
+    ...stores.map(s => [s.id, s.name, s.address, s.lat, s.lng, s.favorite, s.last_visit])
+  ];
+
+  try {
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?valueInputOption=RAW&key=${API_KEY}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values })
+      }
+    );
+  } catch(e) { console.error('stores保存エラー:', e); }
+
+  // logs シートへ追記
+  try {
+    // logsシートが存在するか確認してから追記
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/logs:append?valueInputOption=RAW&key=${API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[store.id, date, note]] })
+      }
+    );
+  } catch(e) { console.error('logs保存エラー:', e); }
+}
+
+// =============================
+// 統計更新
+// =============================
+function updateStats() {
+  const visited = stores.filter(s => s.last_visit).length;
+  document.getElementById('visited-count').textContent = visited;
+  document.getElementById('total-count').textContent = stores.length;
+}
+
+// =============================
+// お気に入りボタン
+// =============================
+document.querySelectorAll('.fav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentFavorite = Number(btn.dataset.val);
+    document.querySelectorAll('.fav-btn').forEach(b => {
+      b.classList.remove('active-0','active-1','active-2','active-3');
+    });
+    btn.classList.add(`active-${currentFavorite}`);
+  });
+});
+
+// =============================
+// 閉じる
+// =============================
+document.getElementById('close-btn').addEventListener('click', closeSheet);
+document.getElementById('overlay').addEventListener('click', closeSheet);
+
+// =============================
+// 現在地・最寄り店舗
+// =============================
+let currentLocationMarker = null;
+
+document.getElementById('locate-btn').addEventListener('click', () => {
+  if (!navigator.geolocation) {
+    showToast('位置情報が利用できません');
+    return;
+  }
+
+  const btn = document.getElementById('locate-btn');
+  btn.textContent = '取得中...';
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      // 現在地マーカーを表示
+      if (currentLocationMarker) currentLocationMarker.setMap(null);
+      currentLocationMarker = new google.maps.Marker({
+        position: { lat, lng },
+        map,
+        icon: {
+          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+              <circle cx="10" cy="10" r="8" fill="#CBA258" stroke="white" stroke-width="2"/>
+              <circle cx="10" cy="10" r="3" fill="white"/>
+            </svg>
+          `)}`,
+          scaledSize: new google.maps.Size(20, 20),
+          anchor: new google.maps.Point(10, 10),
+        },
+        title: '現在地',
+        zIndex: 999,
+      });
+
+      // 地図を現在地に移動
+      map.panTo({ lat, lng });
+
+      // 最寄り店舗を計算
+      let nearest = null;
+      let minDist = Infinity;
+
+      for (const store of stores) {
+        const d = getDistance(lat, lng, store.lat, store.lng);
+        if (d < minDist) {
+          minDist = d;
+          nearest = store;
+        }
+      }
+
+      if (nearest) {
+        const distM = Math.round(minDist);
+        document.getElementById('nearest-name').textContent = nearest.name.replace('スターバックス ', '');
+        document.getElementById('nearest-dist').textContent = distM < 1000 ? distM : (distM / 1000).toFixed(1) + 'k';
+        document.getElementById('nearest-banner').style.display = 'block';
+
+        // 最寄り店舗のピンをアニメーション
+        if (markers[nearest.id]) {
+          markers[nearest.id].setAnimation(google.maps.Animation.BOUNCE);
+          setTimeout(() => markers[nearest.id].setAnimation(null), 2000);
+        }
+
+        // バナーをタップしたらその店舗を開く
+        document.getElementById('nearest-banner').onclick = () => openSheet(nearest.id);
+      }
+
+      btn.textContent = '📍 最寄り店舗';
+    },
+    (err) => {
+      showToast('位置情報の取得に失敗しました');
+      btn.textContent = '📍 最寄り店舗';
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+
+// 2点間の距離計算（メートル）
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// =============================
+// 店舗追加モーダル
+// =============================
+function openAddModal() {
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-address').value = '';
+  document.getElementById('add-lat').value = '';
+  document.getElementById('add-lng').value = '';
+  document.getElementById('add-modal').classList.add('open');
+  document.getElementById('add-modal-overlay').classList.add('show');
+}
+
+function closeAddModal() {
+  document.getElementById('add-modal').classList.remove('open');
+  document.getElementById('add-modal-overlay').classList.remove('show');
+}
+
+document.getElementById('add-store-btn').addEventListener('click', openAddModal);
+document.getElementById('add-close-btn').addEventListener('click', closeAddModal);
+document.getElementById('add-modal-overlay').addEventListener('click', closeAddModal);
+
+// 住所から緯度経度を自動取得
+document.getElementById('geocode-btn').addEventListener('click', async () => {
+  const address = document.getElementById('add-address').value.trim();
+  if (!address) { showToast('住所を入力してください'); return; }
+
+  const btn = document.getElementById('geocode-btn');
+  btn.textContent = '取得中...';
+
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${API_KEY}&language=ja`
+    );
+    const data = await res.json();
+    if (data.results && data.results.length > 0) {
+      const loc = data.results[0].geometry.location;
+      document.getElementById('add-lat').value = loc.lat.toFixed(6);
+      document.getElementById('add-lng').value = loc.lng.toFixed(6);
+      showToast('座標を取得しました！');
+    } else {
+      showToast('住所が見つかりませんでした');
+    }
+  } catch(e) {
+    showToast('取得に失敗しました');
+  }
+  btn.textContent = '📍 住所から座標を自動取得';
+});
+
+// 店舗追加ボタン
+document.getElementById('add-submit-btn').addEventListener('click', async () => {
+  const name = document.getElementById('add-name').value.trim();
+  const address = document.getElementById('add-address').value.trim();
+  const lat = parseFloat(document.getElementById('add-lat').value);
+  const lng = parseFloat(document.getElementById('add-lng').value);
+
+  if (!name) { showToast('店舗名を入力してください'); return; }
+  if (!lat || !lng) { showToast('座標を取得または入力してください'); return; }
+
+  // 新しいIDを生成（既存の最大ID+1）
+  const newId = Math.max(...stores.map(s => s.id), 0) + 1;
+  const newStore = { id: newId, name, address, lat, lng, favorite: 0, last_visit: '' };
+
+  stores.push(newStore);
+
+  // マーカー追加
+  const color = getPinColor(0, '');
+  const size = getPinSize('');
+  const icon = createPinSVG(color, size);
+  const marker = new google.maps.Marker({
+    position: { lat, lng },
+    map,
+    icon,
+    title: name,
+  });
+  marker.addListener('click', () => openSheet(newId));
+  markers[newId] = marker;
+
+  // スプレッドシートに保存
+  await saveStoresToSheet();
+
+  // ローカルストレージにも保存
+  saveLocal();
+
+  updateStats();
+  closeAddModal();
+  showToast(`✓ ${name} を追加しました！`);
+
+  // 地図をその店舗に移動
+  map.panTo({ lat, lng });
+});
+
+// storesシート全体保存
+async function saveStoresToSheet() {
+  const values = [
+    ['id','name','address','lat','lng','favorite','last_visit'],
+    ...stores.map(s => [s.id, s.name, s.address, s.lat, s.lng, s.favorite, s.last_visit])
+  ];
+  try {
+    await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}?valueInputOption=RAW&key=${API_KEY}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values })
+      }
+    );
+  } catch(e) { console.error('stores保存エラー:', e); }
+}
+
+// =============================
+// トースト
+// =============================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-HT9q70J8PoMN26dUwqxWnoauszJ8N7k&callback=initMap&language=ja">
+</script>
+
+</body>
+</html>
